@@ -1,0 +1,237 @@
+{% extends 'kingadmin/base.html' %}
+{% load my_tag %}
+{% block custom_css %}
+
+<style>
+.btn_folder{
+    margin-top: 50px;
+}
+.form_btn{
+    margin-right: 20px;
+    margin-bottom: 200px;
+    width: auto;
+    display: inline;
+}
+.error_msg{
+    color: red;
+}
+.form-control{
+    width: auto;
+}
+
+#left_select_container,#right_select_container{
+    background: whitesmoke;
+    margin-right: 20px;
+    height: 270px;
+    border-radius: 5px;
+}
+#left_select_box,#right_select_box{
+    width: 100%;
+}
+h5{
+    font-weight: bolder;
+    background: #53a07c;
+    padding: 15px;
+    color: #fff;
+    border-radius: 5px;
+}
+.main{
+    margin-left: 100px;
+}
+a:hover{
+    text-decoration: none;
+}
+
+</style>
+
+{% endblock %}
+
+
+{% block body %}
+
+     <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+                  aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="https://v3.bootcss.com/examples/dashboard/#" style="padding-left: 10%;
+          display: inline-block">KingAdmin后台管理</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+              {% if request.user.is_authenticated %}
+                <li><a href="">{{ request.user }}</a></li>
+                <li><a href="{% url 'king_admin_logout' %}">退出登录</a></li>
+              {% else %}
+                <li><a href="{% url 'king_admin_login' %}">登录</a></li>
+                <li><a href="{% url 'crm_register' %}">注册</a></li>
+              {% endif %}
+          </ul>
+
+        </div>
+      </div>
+    </nav>
+
+     <div class="main">
+        <!--导航栏开发-->
+         <ol class="breadcrumb">
+            <li><a href="{% url 'king_admin_homepage' %}">Home</a></li>
+             <li><a href="{% url 'kingadmin_app_page' app_name %}">{{ app_name }}</a></li>
+            <li class=""><a href="{% url 'model_obj_list' app_name model_name %}">{{ model_name }}</a></li>
+            <li class="active">{{ obj }}</li>
+        </ol>
+
+        <h2 class="page-header">{{ model_name }}</h2>
+
+        <form class="form-horizontal" method="post" novalidate onsubmit="add_select()" STYLE="margin-left: 2%">
+            {% csrf_token %}
+
+            {#   在此处循环生成form对象  #}
+            {% for input_obj in form_obj %}
+              <div class="form-group">
+                  <label for="inputEmail3" class="control-label">{{ input_obj.label }}</label>
+
+                  <div class="multiple_select_box_container">
+
+                    {% if input_obj.name in admin_class.filter_horizontal %}
+                        <!--特殊字段，开发多选框-->
+                        <div class="col-md-3" id="left_select_container">
+                            <h5>可选课程</h5>
+                            <p id="id_consult_course_filter" class="selector-filter">
+                                 筛选对象
+                                <label for="id_consult_course_input">
+                                    <span class="glyphicon glyphicon-search" title=""></span></label>
+                                <input type="text" placeholder="Filter" id="id_consult_course_input" style="border-radius: 5px"
+                                       oninput="fuzzy_search(this)">
+                            </p>
+
+                            <select class="form-control" id="left_select_box" multiple="multiple">
+                                <!--获取所有可选课程-->
+                                {% get_available_fields admin_class input_obj.name id 1 %}
+                            </select>
+
+                            <input type="button" class="btn btn-success" id="add_all_btn" value="add all" style="margin-top: 15px">
+                        </div>
+                        <div class="col-md-3" id="right_select_container">
+                            <h5 style="background: #79aec8;color: #fff;">已选择课程</h5>
+                             <select multiple="multiple" class="form-control" name="{{ input_obj.name }}"
+                                     id="right_select_box" autocomplete="off">
+                                 <!--获取已选择的课程-->
+                               {% get_available_fields admin_class input_obj.name id 0 %}
+                            </select>
+                         <input class="btn btn-danger" id="remove_all_btn" value="remove all" type="button" style="margin-top: 15px">
+                        </div>
+                        <span style='margin-left: -490px'>
+                             {% show_error_tips input_obj errors%}
+                        </span>
+
+                    {% else %}
+                        {{ input_obj }}{% show_error_tips input_obj errors%}
+                    {% endif %}
+                  </div>
+              </div>
+            {% endfor %}
+
+            {% block readonly_fields_display  %}
+                {% readonly_fields_display admin_class id %}
+            {% endblock %}
+
+            <div class="btn_folder">
+                <button type="submit" class="btn btn-success form_btn" id="submit_btn">Save</button>
+
+                {#    怎么在新增数据前保存数据        #}
+                <a href="{% url 'add_obj' app_name model_name %}">
+                    <input type="button" class="btn btn-info form_btn" value="Save and add another">
+                </a>
+
+                {% block delete_button %}
+                    <a href="{% url 'delete_obj' app_name model_name id %}">
+                        <input type="button" class="btn btn-danger form_btn" onclick="before_submit()" value="Delete">
+                    </a>
+                {% endblock %}
+            </div>
+
+        </form>
+
+    </div>
+
+
+{% endblock %}
+
+
+{% block custom_js %}
+<script>
+    // 双击则移动到对面的多选框中,采用事件监听所有的option的双击事件
+    $('.multiple_select_box_container').on('dblclick','option',function () {
+        var grand_parent_node = $(this).parent().parent();
+        // console.log(grand_parent_node[0])
+        // 判断是左侧还是右侧的option
+        if(grand_parent_node.attr('id')=='left_select_container'){
+            var click_node = $(this);
+            $(this).remove();
+            grand_parent_node.next().children('[id=right_select_box]').append(click_node)
+        }
+        else if(grand_parent_node.attr('id')=='right_select_container'){
+
+            var click_node = $(this);
+            $(this).remove();
+            grand_parent_node.prev().children('[id=left_select_box]').append(click_node);
+        }
+    });
+
+    // 设置右侧待提交的所有option的selected属性
+    function add_select() {
+      $('#right_select_box option').prop('selected',true)
+    }
+
+    // 点击添加所有课程
+    $('#add_all_btn').click(function () {
+      $('#right_select_box').append( $('#left_select_box option').remove() )
+    });
+
+    // 点击移除所有课程
+    $('#remove_all_btn').click(function () {
+        $('#left_select_box').append( $('#right_select_box option').remove() )
+    });
+
+    // 过滤对象,采用独有的input监听事件，写法如下：
+    $('#id_consult_course_input').on('input propertychange',function () {
+        console.log($(this).val());
+        search_str = $(this).val();
+        $('#left_select_box option').each(function (i,ele) {
+            if(ele.text.search(search_str)==-1){ // 没有找对匹配的字符，则隐藏当前标签
+                ele.hidden=true
+            }
+            else{
+                ele.hidden=false
+            }
+        })
+    });
+
+
+    // 多选下拉框根据输入动态过滤对象
+    {#function fuzzy_search(ele) {#}
+    {#    seach_str=ele.value#}
+    {#    $('#left_select_box option').each(function (i,ele) {#}
+    {#        if(ele.text.search(seach_str)==-1){#}
+    {#            ele.hidden=true#}
+    {#        }#}
+    {#        else{#}
+    {#            ele.hidden=false#}
+    {#        }#}
+    {#    })#}
+    {#}#}
+
+</script>
+
+{% endblock %}
+
+
+
+
+

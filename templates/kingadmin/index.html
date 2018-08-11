@@ -1,0 +1,72 @@
+{% extends 'kingadmin/base.html' %}
+{% block custom_css %}
+<style>
+a:hover{
+    text-decoration: none;
+}
+td{
+    width: 150px;
+}
+
+</style>
+
+{% endblock %}
+
+{% block body %}
+    <nav class="navbar navbar-inverse navbar-fixed-top header">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+                  aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="https://v3.bootcss.com/examples/dashboard/#" style="padding-left: 10%;
+          display: inline-block">KingAdmin后台管理</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+              {% if request.user.is_authenticated %}
+                <li><a href="">{{ request.user }}</a></li>
+                <li><a href="{% url 'king_admin_logout' %}">退出登录</a></li>
+              {% else %}
+                <li><a href="{% url 'king_admin_login' %}">登录</a></li>
+                <li><a href="{% url 'crm_register' %}">注册</a></li>
+              {% endif %}
+          </ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-9 col-md-8 main">
+            {% for app_name,app_tables in enabled_admins.items %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th style="background: #2e6da4;color: white;font-size: 20px" colspan="2">
+                                <a href="{% url 'kingadmin_app_page' app_name %}"
+                                    style="color: whitesmoke">{{ app_name }}</a></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model_name in app_tables %} <!---->
+                        <tr>
+                            <td><a href="{% url 'model_obj_list' app_name model_name %}">{{ model_name }}</a></td>
+                            <td><a href="{% url 'add_obj' app_name model_name %}"
+                                    ><span class="glyphicon glyphicon-plus">增加</span></a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        </div>
+
+      </div>
+    </div>
+{% endblock %}
+

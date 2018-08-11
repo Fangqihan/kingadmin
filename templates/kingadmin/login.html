@@ -1,0 +1,33 @@
+{% extends 'kingadmin/base.html' %}
+
+{% load staticfiles %}
+
+{% block custom_css %}
+<link rel="stylesheet" href="{% static 'css/signin.css' %}">
+{% endblock %}
+
+{% block body %}
+
+<div class="container">
+    <form class="form-signin" method="post" novalidate action="">
+        <h2 class="form-signin-heading">KingAdmin</h2>
+        <label for="inputEmail" class="sr-only">用户名</label>
+        <input type="text" id="inputEmail" name="username"  class="form-control"
+                   placeholder="Email address" required autofocus>
+
+        <label for="inputPassword" class="sr-only">密 码</label>
+        <input type="password" id="inputPassword" name="password" class="form-control"
+                    placeholder="Password" required>
+
+        <div class="checkbox">
+            <label>
+                <input type="checkbox" value="remember-me"> 记住我
+            </label>
+        </div>
+
+        <button class="btn btn-lg btn-primary btn-block" type="submit">登录</button>
+        {% csrf_token %}
+    </form>
+
+</div> <!-- /container -->
+{% endblock %}

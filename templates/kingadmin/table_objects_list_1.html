@@ -1,0 +1,294 @@
+{% extends 'kingadmin/base.html' %}
+
+{% load my_tag %}
+
+{% block custom_css %}
+    <style>
+        #filter_box > select {
+            height: 35px;
+            line-height: 35px;
+        }
+
+        .input_control {
+            line-height: 30px;
+            height: 30px;
+            display: inline;
+            width: 400px;
+            color: gray;
+        }
+
+        .button_control {
+            height: 30px;
+        }
+
+        #filter_box > select {
+            {#height: 30px;#}
+            {#line-height: 30px#}
+        }
+
+        .panel-info > .panel-heading {
+            color: grey;
+        }
+        #filter_box{
+            {#font-size: 10px;#}
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                        aria-expanded="false"
+                        aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://v3.bootcss.com/examples/dashboard/#" style="padding-left: 10%;
+          display: inline-block">KingAdmin后台管理</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    {% if request.user.is_authenticated %}
+                        <li><a href="">{{ request.user }}</a></li>
+                        <li><a href="{% url 'king_admin_logout' %}">退出登录</a></li>
+                    {% else %}
+                        <li><a href="{% url 'king_admin_login' %}">登录</a></li>
+                        <li><a href="{% url 'crm_register' %}">注册</a></li>
+                    {% endif %}
+                </ul>
+
+            </div>
+        </div>
+    </nav>
+
+    <div class="main">
+        <ol class="breadcrumb">
+            <li><a href="{% url 'king_admin_homepage' %}">Home</a></li>
+            <li><a href="{% url 'kingadmin_app_page' app_name %}">{{ app_name }}</a></li>
+            <li class="active">{{ model_name }}</li>
+        </ol>
+        <h2>{% get_names admin_class %}</h2>
+        <hr>
+
+        <div class="panel panel-info">
+            <a href="{% url 'add_obj' app_name model_name %}" style="float: right">
+                <button type="submit" class="btn btn-default form_btn">ADD {% get_names admin_class %}
+                    <span class="glyphicon glyphicon-plus"></span></button>
+            </a>
+
+            <div class="panel-heading">
+
+                <form id="search_box">
+                    <input type="search" name="search" class="form-control input_control"
+                           value="{% show_search_str admin_class search_str %}" id="search_input">
+
+                    <input type="submit" value="搜索" style="display: inline" class="btn btn-success button_control">
+                </form>
+
+                <!--自定义过滤器-->
+                <form id="filter_box">
+                    {% for field_name in admin_class.list_filter %}
+                        <!--先取出字段名-->
+                        <span style="">{% get_label_name admin_class field_name %}</span>
+                        <!--直接生成标签-->
+                        {% bulid_filter_ele field_name admin_class %}
+                    {% endfor %}
+                    <input type="submit" value="过滤" class="btn btn-info button_control">
+                </form>
+
+                <form method="post" id="changelist-form" novalidate onsubmit="collect_id_befor_submit(this)">
+                    <!--提交表单触发函数，将当前页面所有的选中的checkbox的value组装成列表，及要处理的对象的id列表-->
+                    <select class="form-control" style="width: 200px;display: inline;height: 30px;
+                    line-height: 30px;margin-top: 20px" name="action">
+                        <option value="">-----------</option>
+                        {% for action in admin_class.default_actions %}
+                            <option value="{{ action }}">{{ action }}</option>
+                        {% endfor %}
+                        {% for action in admin_class.actions %}
+                            <option value="{{ action }}">{{ action }}</option>
+                        {% endfor %}
+                    </select>
+                    <input hidden name="obj_id_list" id="obj_id_list">
+                    <button type="submit" class="btn btn-danger button_control">Go</button>
+                    {% csrf_token %}
+                </form>
+
+            </div>
+
+            <table class="table table-striped">
+                <!--标题栏-->
+                <thead>
+                <tr>
+                    <th width="50px"><input type="checkbox" id="action-toggle"></th>
+
+                    {% if admin_class.list_display %} <!-- 判断是否定制list_display -->
+                        {% for field_name in admin_class.list_display %} <!--循环遍历每个显示显示列名称-->
+                            <th>
+                                <!--点击当前字段排序功能-->
+                                <a href="?order={% get_sorted_column order_column forloop.counter field_name %}{% get_filter_args admin_class %}">
+                                    {{ field_name }}<a>
+                                    {% arrow field_name order_column %}<!--排序箭头指示-->
+                            </th>
+                        {% endfor %}
+                    {% else %}
+                        <th>{{ model_name }}</th>
+                    {% endif %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for obj in contacts.object_list %}
+                    {% get_obj_rows obj admin_class %}
+                {% endfor %}
+                </tbody>
+
+            </table>
+
+
+            <!--django自带分页，但是样式简陋-->
+{#            <div class="pagination">#}
+{#                <span class="step-links">#}
+{#                    {% if contacts.has_previous %}#}
+{#                        <a href="?page={{ contacts.previous_page_number }}">previous</a>#}
+{#                    {% endif %}#}
+{##}
+{#                    <span class="current">#}
+{#                        Page {{ contacts.number }} of {{ contacts.paginator.num_pages }}.#}
+{#                    </span>#}
+{##}
+{#                    {% if contacts.has_next %}#}
+{#                        <a href="?page={{ contacts.next_page_number }}">next</a>#}
+{#                    {% endif %}#}
+{#                </span>#}
+{#            </div>#}
+
+
+{#            <nav aria-label="Page navigation">#}
+{#              <ul class="pagination">#}
+{#                <li>#}
+{#                    {% if contacts.has_previous %}#}
+{#                        <a href="?page={{ contacts.previous_page_number }}">上一页</a>#}
+{#                    {% endif %}#}
+{#                </li>#}
+{##}
+{#                {% pager_list contacts %}#}
+{##}
+{#                <li>#}
+{#                    {% if contacts.has_next %}#}
+{#                        <a href="?page={{ contacts.next_page_number }}">下一页</a>#}
+{#                    {% endif %}#}
+{#                </li>#}
+{#              </ul>#}
+{#            </nav>#}
+
+
+
+
+            <!--分页方式1-->
+{#               {{ contacts.render }}#}
+
+            <!--分页方式2-->
+            {% load i18n %}
+            <nav style="margin-left: 40%">
+                <ul class="pagination{% if size %} pagination-{{ size }}{% endif %}">
+                    {% if contacts.has_previous %}
+                        <li class="previous">
+                            <a href="?{{ contacts.previous_page_number.querystring }}"
+                               aria-label="{% trans 'previous page' %}">
+                                <span aria-hidden="true">上一页</span>
+                                {% if verbose %}<span class="hidden-xs">{% trans 'previous page' %}</span>{% endif %}
+                            </a>
+                        </li>
+
+                    {% else %}
+                        <li class="previous disabled">
+                            <span>
+                                <span aria-hidden="true">上一页</span>
+                                {% if verbose %}<span class="hidden-xs">{% trans 'previous page' %}</span>{% endif %}
+                            </span>
+                        </li>
+                    {% endif %}
+
+                    {% for page in contacts.pages %}
+                        {% if page %}
+                            {% if page == contacts.number %}
+                                <li class="active">
+                                    <a href="?{{ page.querystring }}">{{ page }} <span
+                                            class="sr-only">({% trans 'current page' %})</span></a>
+                                </li>
+                            {% else %}
+                                <li>
+                                    <a href="?{{ page.querystring }}">{{ page }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="disabled">
+                                <span>...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if contacts.has_next %}
+                        <li class="next">
+                            <a href="?{{ contacts.next_page_number.querystring }}" aria-label="{% trans 'next page' %}">
+                                {% if verbose %}<span class="hidden-xs">{% trans 'next page' %}</span>{% endif %}
+                                <span aria-hidden="true">下一页</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="next disabled">
+                            <span>
+                                {% if verbose %}<span class="hidden-xs">{% trans 'next page' %}</span>{% endif %}
+                                <span aria-hidden="true">下一页</span>
+                            </span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block custom_js %}
+    <script>
+        $('#search_input').click(function () {
+            $('#search_input').val('')
+        });
+
+        // checkbox选中（全选与反选），监听#action-toggle
+        $('.table').on('click', '#action-toggle', function () {
+            if ($(this).prop('checked')) {
+                // 全部选中，此处注意使用prop方法，checked是固有属性
+                $('[name=_selected_action]').prop('checked', true)
+            }
+            else {
+                $('[name=_selected_action]').prop('checked', false)
+            }
+        });
+
+        function collect_id_befor_submit(data) {
+            var obj_id_lst = [];
+            // 先定位所有的checkbox然后再过滤出选中的checkbox
+            checked_input_lst = $('[name=_selected_action]').filter(':checked');
+            $.each(checked_input_lst, function (i, ele) {
+                obj_id_lst.push(ele.value);  // push方法
+                console.log(ele.value)
+            });
+            $('#obj_id_list').val(JSON.stringify(obj_id_lst))
+        }
+
+    </script>
+
+{% endblock %}
+
+
+
+
+
+
