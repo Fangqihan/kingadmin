@@ -1,6 +1,7 @@
 # kingadmin
 自开发admin后台
 
+将文件下载并放在项目路径下即可。
 
 ## 配置步骤
 #### 1、setting.py
